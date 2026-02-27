@@ -408,8 +408,8 @@
     <p>Medizinethik im Geiste des Hippokrates</p>
     <div class="divider"></div>
     <div class="speech-toggle">
-      <button id="autoSpeakBtn" onclick="toggleAutoSpeak()" title="Automatische Sprachausgabe">
-        🔇 Stimme aus
+      <button id="autoSpeakBtn" class="active" onclick="toggleAutoSpeak()" title="Automatische Sprachausgabe">
+        🔊 Stimme an
       </button>
     </div>
   </header>
@@ -462,7 +462,7 @@
 
     let conversationHistory = [];
     let isLoading = false;
-    let autoSpeak = false;
+    let autoSpeak = true;
     let currentAudio = null;
 
     // ── Modern TTS (OpenAI via Server) ────────────────
