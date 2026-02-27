@@ -91,23 +91,20 @@ app.post("/api/speak", async (req, res) => {
     if (!text) return res.status(400).json({ error: "Text required." });
 
     const trimmedText = text.slice(0, 2000);
+    const tmpFile = join(__dirname, `.tts-${Date.now()}.mp3`);
 
     const tts = new MsEdgeTTS();
     await tts.setMetadata(
-      "de-DE-ConradNeural",   // tiefe, ruhige deutsche Männerstimme
+      "de-DE-ConradNeural",
       OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3
     );
 
-    const readable = tts.toStream(trimmedText);
-    const chunks = [];
+    await tts.toFile(tmpFile, trimmedText);
 
-    await new Promise((resolve, reject) => {
-      readable.on("data", (chunk) => chunks.push(chunk));
-      readable.on("end", resolve);
-      readable.on("error", reject);
-    });
+    const { readFile, unlink } = await import("fs/promises");
+    const buffer = await readFile(tmpFile);
+    await unlink(tmpFile).catch(() => {});
 
-    const buffer = Buffer.concat(chunks);
     res.set({ "Content-Type": "audio/mpeg", "Content-Length": buffer.length });
     res.send(buffer);
   } catch (err) {
