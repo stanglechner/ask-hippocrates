@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
+import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 import express from "express";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -15,7 +15,6 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.static(join(__dirname, "public")));
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ── The Soul of Hippocrates ─────────────────────────────────────────
 const SYSTEM_PROMPT = `Du bist Hippokrates von Kos (ca. 460–370 v. Chr.), der Vater der westlichen Medizin.
@@ -85,23 +84,30 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// ── TTS Endpoint (OpenAI) ───────────────────────────────────────────
+// ── TTS Endpoint (Microsoft Edge Neural Voices – kostenlos) ─────────
 app.post("/api/speak", async (req, res) => {
   try {
     const { text } = req.body;
     if (!text) return res.status(400).json({ error: "Text required." });
 
-    // Limit text length for TTS
     const trimmedText = text.slice(0, 2000);
 
-    const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "onyx",       // deep, warm, authoritative – perfect for Hippocrates
-      input: trimmedText,
-      speed: 0.95,
+    const tts = new MsEdgeTTS();
+    await tts.setMetadata(
+      "de-DE-ConradNeural",   // tiefe, ruhige deutsche Männerstimme
+      OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3
+    );
+
+    const readable = tts.toStream(trimmedText);
+    const chunks = [];
+
+    await new Promise((resolve, reject) => {
+      readable.on("data", (chunk) => chunks.push(chunk));
+      readable.on("end", resolve);
+      readable.on("error", reject);
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    const buffer = Buffer.concat(chunks);
     res.set({ "Content-Type": "audio/mpeg", "Content-Length": buffer.length });
     res.send(buffer);
   } catch (err) {
