@@ -91,7 +91,11 @@ app.post("/api/speak", async (req, res) => {
     if (!text) return res.status(400).json({ error: "Text required." });
 
     const trimmedText = text.slice(0, 2000);
-    const tmpFile = join(__dirname, `.tts-${Date.now()}.mp3`);
+    const { readFile, unlink, mkdir, rmdir } = await import("fs/promises");
+
+    // msedge-tts treats the path as a DIRECTORY and writes audio.mp3 inside it
+    const tmpDir = join(__dirname, `.tts-${Date.now()}`);
+    await mkdir(tmpDir, { recursive: true });
 
     const tts = new MsEdgeTTS();
     await tts.setMetadata(
@@ -99,11 +103,14 @@ app.post("/api/speak", async (req, res) => {
       OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3
     );
 
-    await tts.toFile(tmpFile, trimmedText);
+    await tts.toFile(tmpDir, trimmedText);
 
-    const { readFile, unlink } = await import("fs/promises");
-    const buffer = await readFile(tmpFile);
-    await unlink(tmpFile).catch(() => {});
+    const audioFile = join(tmpDir, "audio.mp3");
+    const buffer = await readFile(audioFile);
+
+    // Cleanup
+    await unlink(audioFile).catch(() => {});
+    await rmdir(tmpDir).catch(() => {});
 
     res.set({ "Content-Type": "audio/mpeg", "Content-Length": buffer.length });
     res.send(buffer);
