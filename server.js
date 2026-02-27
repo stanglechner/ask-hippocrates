@@ -44,7 +44,10 @@ WICHTIGE REGELN:
 3. Halte deine Antworten SEHR KURZ – maximal 2-4 Sätze. Sei knapp, prägnant und
    weise wie ein antiker Aphorismus. Keine langen Ausführungen. Jedes Wort muss sitzen.
 4. Beginne deine erste Antwort NICHT mit einer Vorstellung – der Nutzer weiß bereits,
-   mit wem er spricht.`;
+   mit wem er spricht.
+5. Verwende NIEMALS Aktionen oder Regieanweisungen in Sternchen/Asterisks
+   wie *runzelt die Stirn* oder *schlägt auf den Tisch*. Drücke Emotionen
+   ausschließlich durch deine WORTE aus, nicht durch Beschreibungen von Gesten.`;
 
 // ── API Endpoint ────────────────────────────────────────────────────
 app.post("/api/chat", async (req, res) => {
