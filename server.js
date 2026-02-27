@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import express from "express";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -10,10 +11,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(express.static(join(__dirname, "public")));
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ── The Soul of Hippocrates ─────────────────────────────────────────
 const SYSTEM_PROMPT = `Du bist Hippokrates von Kos (ca. 460–370 v. Chr.), der Vater der westlichen Medizin.
@@ -80,6 +82,31 @@ app.post("/api/chat", async (req, res) => {
   } catch (err) {
     console.error("Anthropic API error:", err.message);
     res.status(500).json({ error: "Der Geist des Hippokrates ist vorübergehend nicht erreichbar." });
+  }
+});
+
+// ── TTS Endpoint (OpenAI) ───────────────────────────────────────────
+app.post("/api/speak", async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: "Text required." });
+
+    // Limit text length for TTS
+    const trimmedText = text.slice(0, 2000);
+
+    const mp3 = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "onyx",       // deep, warm, authoritative – perfect for Hippocrates
+      input: trimmedText,
+      speed: 0.95,
+    });
+
+    const buffer = Buffer.from(await mp3.arrayBuffer());
+    res.set({ "Content-Type": "audio/mpeg", "Content-Length": buffer.length });
+    res.send(buffer);
+  } catch (err) {
+    console.error("TTS error:", err.message);
+    res.status(500).json({ error: "Sprachausgabe fehlgeschlagen." });
   }
 });
 
